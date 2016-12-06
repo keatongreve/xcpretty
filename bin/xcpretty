@@ -48,22 +48,29 @@ OptionParser.new do |opts|
     printer_opts[:unicode] = value
   end
   opts.on("-r", "--report FORMAT or PATH", "Run FORMAT or PATH reporter",
-          "  Choices: #{report_formats.keys.join(', ')}") do |format|
-    if report_formats.key?(format)
-      report_classes << report_formats[format]
-    else
-      report_classes << XCPretty.load_custom_class(format)
+          "  Choices: #{report_formats.keys.join(', ')}") do |formats|
+    formats_list = formats.split(',')
+    formats_list.each do |format|
+      if report_formats.key?(format)
+        report_classes << report_formats[format]
+      else
+        report_classes << XCPretty.load_custom_class(format)
+      end
+      report_options << {}
     end
-    report_options << {}
   end
-  opts.on('-o', '--output PATH', 'Write report output to PATH') do |path|
-    unless opts = report_options.last
-      XCPretty.exit_with_error('Expected report format to be specified before output path')
+  opts.on('-o', '--output PATH', 'Write report output to PATH') do |paths|
+    paths_list = paths.split(',')
+    paths_list.each_with_index do |path, index|
+      unless opts = report_options[index]
+        XCPretty.exit_with_error('Expected report format to be specified before output path')
+      end
+      opts[:path] = path
     end
-    opts[:path] = path
   end
   opts.on('--screenshots', 'Collect screenshots in the HTML report') do
-    unless opts = report_options.last
+    html_index = report_classes.index { |c| c == XCPretty::HTML }
+    unless opts = report_options[html_index]
       XCPretty.exit_with_error('Expected screenshot argument to be specified after report format')
     end
     opts[:screenshots] = true
